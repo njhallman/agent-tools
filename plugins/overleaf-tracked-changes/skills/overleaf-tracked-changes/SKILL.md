@@ -11,11 +11,27 @@ suggestion. This skill talks to Overleaf's realtime editing protocol directly,
 so edits show up in the review panel with accept/reject buttons, attributed to
 whichever account the session cookie belongs to.
 
-Everything runs through `scripts/overleaf_client.py` (only dependency:
-`requests`, already in `.venv`). The protocol details it encodes were
-established by experiment; `references/protocol-notes.md` explains each one and
-why it matters. Read that file before changing the client — several of the
+Everything runs through `scripts/overleaf_client.py`, in this skill's own
+directory. `requests` is its only dependency. The protocol details it encodes
+were established by experiment; `references/protocol-notes.md` explains each one
+and why it matters. Read that file before changing the client — several of the
 behaviors are silent failures rather than errors.
+
+## Running the client
+
+Where this skill's directory sits depends on how it was installed — a plugin
+lands in a shared cache, a vendored copy under the repo's `.claude/skills/`.
+Rather than hard-code either, resolve the path once per session and reuse it:
+
+```bash
+CLIENT=$(find ~/.claude/plugins/cache .claude/skills -name overleaf_client.py 2>/dev/null | head -1)
+python3 "$CLIENT" list
+```
+
+Every example below uses `$CLIENT` and assumes that resolution has been done. If
+the absolute path is already known, use it directly instead. If `find` returns
+nothing the skill is installed somewhere else — locate `overleaf_client.py` and
+call it by full path; do not guess a layout.
 
 ## Setup: the session cookie
 
@@ -53,7 +69,7 @@ walking up from the working directory. It refuses to run when none is set
 rather than falling back to a default.
 
 ```bash
-echo 68379a8b229d7e0679f77d31 > .claude/overleaf-project-id   # per repository
+echo <24-hex-id-from-the-project-URL> > .claude/overleaf-project-id   # per repository
 ```
 
 Two things about that location. It is **per repository, not per skill**: when
@@ -74,8 +90,7 @@ works in either place, and edits are positional — acting on a stale copy puts
 text in the wrong location.
 
 ```bash
-.venv/bin/python3 .claude/skills/overleaf-tracked-changes/scripts/overleaf_client.py \
-  verify main.tex LaTeX/main.tex
+python3 "$CLIENT" verify main.tex LaTeX/main.tex
 ```
 
 Exit code 0 means identical. If it differs, `read` the Overleaf copy and diff it
@@ -110,7 +125,7 @@ to edit lists and applies everything over a single connection, which is a few
 seconds rather than one connection per document.
 
 ```bash
-... batch --edits /tmp/batch.json            # applies; --dry-run to preview
+python3 "$CLIENT" batch --edits /tmp/batch.json     # applies; --dry-run to preview
 ```
 
 ```json
@@ -128,8 +143,8 @@ structure, references, or numbers; for prose it just costs the user time.
 **4. Dry run, then apply.**
 
 ```bash
-... edit main.tex --edits /tmp/edits.json           # preview: line numbers + ops
-... edit main.tex --edits /tmp/edits.json --apply   # send as tracked changes
+python3 "$CLIENT" edit main.tex --edits /tmp/edits.json          # preview: line numbers + ops
+python3 "$CLIENT" edit main.tex --edits /tmp/edits.json --apply  # send as tracked changes
 ```
 
 Apply re-reads the document afterward and reports the new version and how many
@@ -152,11 +167,12 @@ else is needed from this side.
 | `accept PATH [--apply] [--mine-only]` | resolve tracked changes in a doc |
 | `bundle` | print a self-contained installer for this skill |
 
-Paths are matched by suffix, so `main.tex` resolves `/LaTeX/main.tex`. The
-project id defaults to this repo's Overleaf project and can be overridden with
-`--project` or `OVERLEAF_PROJECT_ID`. Add `--verbose` to see raw protocol
-frames when debugging, and `--untracked` only if the user explicitly wants a
-normal edit rather than a suggestion.
+Paths are matched by suffix, so `main.tex` resolves `/LaTeX/main.tex`. There is
+no default project id: the client takes `--project`, else `$OVERLEAF_PROJECT_ID`,
+else the nearest `.claude/overleaf-project-id` walking up from the working
+directory, and exits 1 with instructions when none is set. Add `--verbose` to
+see raw protocol frames when debugging, and `--untracked` only if the user
+explicitly wants a normal edit rather than a suggestion.
 
 ## Accepting changes
 
@@ -202,7 +218,7 @@ installer carrying this file, the protocol notes, and the client as a
 compressed payload.
 
 ```bash
-... bundle > /tmp/install_overleaf_skill.py     # then run it from the repo root
+python3 "$CLIENT" bundle > /tmp/install_overleaf_skill.py   # then run from the repo root
 ```
 
 It writes `.claude/skills/overleaf-tracked-changes/` and prints what to set
