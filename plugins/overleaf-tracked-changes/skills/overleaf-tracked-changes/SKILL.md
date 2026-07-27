@@ -80,8 +80,8 @@ the failure a default causes is invisible — a stale id keeps editing the
 previous project's paper, and since anchors either match or abort the run,
 nothing in the output says the edits landed in the wrong manuscript.
 
-(`SKILL_DIR/project-id` is still read as a last resort, for copies vendored
-directly into one repository.)
+Nothing beside the script is consulted, so there is no way to leave an id in
+the plugin cache where the next project would inherit it.
 
 ## Workflow
 

@@ -61,12 +61,12 @@ ID_FILENAME = ".claude/overleaf-project-id"
 def _project_id_files() -> list[pathlib.Path]:
     """Candidate id files, nearest-to-the-project first.
 
-    The id must be per-project, never per-skill. When this skill is installed
-    as a plugin its directory is a cache shared by every project on the
-    machine, so an id stored beside the script would be inherited by whichever
-    repo happened to run next. The repo-local file is therefore the canonical
-    location; SKILL_DIR/project-id is kept only for copies vendored directly
-    into a single repository.
+    The id must be per-project, never per-skill, and every candidate here is
+    therefore repo-relative. Nothing beside the script is consulted: installed
+    as a plugin, this skill's directory is a cache shared by every project on
+    the machine, so an id stored there would be picked up by whichever repo ran
+    next. A vendored copy lives inside a repository, so the repo-local file
+    already covers that case too.
     """
     candidates = []
     env_root = os.environ.get("CLAUDE_PROJECT_DIR")
@@ -74,7 +74,6 @@ def _project_id_files() -> list[pathlib.Path]:
         candidates.append(pathlib.Path(env_root) / ID_FILENAME)
     cwd = pathlib.Path.cwd().resolve()
     candidates += [p / ID_FILENAME for p in [cwd, *cwd.parents]]
-    candidates.append(SKILL_DIR / "project-id")
     return candidates
 
 
