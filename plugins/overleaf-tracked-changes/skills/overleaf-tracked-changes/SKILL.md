@@ -97,11 +97,24 @@ Exit code 0 means identical. If it differs, `read` the Overleaf copy and diff it
 before doing anything else — the Overleaf side is authoritative for what the
 user is looking at.
 
-**2. Check what is already in flight.** `changes main.tex` lists existing
-suggestions with line numbers and authors. If the user has unresolved tracked
-changes of their own, say so before adding more: suggestions interleave in the
-review panel, and it is easy to hand back a document that is confusing to
-review.
+**2. Check what is already in flight.** `changes main.tex` gives a compact
+overview of existing suggestions. When the user asks about a particular edit,
+use the one-shot review command instead of making separate `changes`, `read`,
+and comment-thread calls:
+
+```bash
+python3 "$CLIENT" review main.tex --line 190
+```
+
+`review` opens one realtime connection and prints the full insertion and
+deletion, nearby source lines, and any Overleaf discussion anchored on that
+line. Omit `--line` to review every tracked-change line in the document; use
+`--context N` to change the two-line context default. The output intentionally
+does not truncate suggestions or expose collaborators' email addresses.
+
+If the user has unresolved tracked changes of their own, say so before adding
+more: suggestions interleave in the review panel, and it is easy to hand back
+a document that is confusing to review.
 
 **3. Describe edits by anchor text, not position.** Write a JSON file of exact
 replacements:
@@ -163,6 +176,7 @@ else is needed from this side.
 | `read PATH [-o FILE]` | current Overleaf text of a doc |
 | `verify PATH LOCAL` | compare against a local file (exit 0 = identical) |
 | `changes PATH` | existing tracked changes, with line numbers and authors |
+| `review PATH [--line N] [--context N]` | full changes, source context, and attached discussion over one connection |
 | `edit PATH --edits F.json [--apply]` | apply anchor-based edits as suggestions |
 | `accept PATH [--apply] [--mine-only]` | resolve tracked changes in a doc |
 | `bundle` | print a self-contained installer for this skill |

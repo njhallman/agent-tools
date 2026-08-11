@@ -13,6 +13,7 @@ Commands
     read PATH [-o FILE]       fetch a doc's current text
     verify PATH LOCAL         confirm the Overleaf copy matches a local file
     changes PATH              list tracked changes (suggestions) in a doc
+    review PATH [--line N]    show full changes, context, and comment threads
     edit PATH --edits F.json  apply anchor-based edits (dry-run unless --apply)
     accept PATH               resolve tracked changes (dry-run unless --apply)
     batch --edits F.json      apply edits to several docs over one connection
@@ -374,6 +375,25 @@ class Project:
             raise RuntimeError(f"accept failed: HTTP {r.status_code} {r.text[:200]}")
         return len(change_ids)
 
+    def threads(self) -> dict:
+        """Return the project's comment threads over the authenticated session.
+
+        Comment anchors arrive with ``joinDoc`` under ``ranges.comments``, but
+        their messages are loaded separately by the Overleaf editor from this
+        endpoint.  Keeping the request on the realtime connection's HTTP
+        session reuses its authenticated cookie and load-balancer affinity.
+        """
+        r = self.rt.s.get(
+            f"{BASE}/project/{self.pid}/threads",
+            headers={"Accept": "application/json"},
+            timeout=30,
+        )
+        r.raise_for_status()
+        data = r.json()
+        if not isinstance(data, dict):
+            raise RuntimeError("Overleaf returned an invalid comment-thread payload")
+        return data
+
     def upload(self, local_path: str, folder_id: str, name: str | None = None) -> dict:
         """Replace or add a binary file (figures, PDFs) in a project folder.
 
@@ -455,6 +475,125 @@ def build_ops(text: str, edits: list) -> list:
     return [op for _, _, ops in reversed(groups) for op in ops]
 
 
+def _line_number(text: str, position: int) -> int:
+    """Convert a document offset to a one-based source line."""
+    position = max(0, min(position, len(text)))
+    return text[:position].count("\n") + 1
+
+
+def _author_names(threads: dict) -> dict[str, str]:
+    """Build a user-id -> display-name map without exposing email addresses."""
+    names = {}
+    for thread in threads.values():
+        for message in thread.get("messages", []):
+            user = message.get("user") or {}
+            user_id = message.get("user_id") or user.get("id")
+            full_name = " ".join(
+                part for part in (user.get("first_name"), user.get("last_name"))
+                if part
+            )
+            if user_id and full_name:
+                names[user_id] = full_name
+    return names
+
+
+def _indent_block(value: str, prefix: str = "      ") -> list[str]:
+    lines = value.splitlines() or [""]
+    return [prefix + line for line in lines]
+
+
+def render_review(
+    path: str,
+    document: dict,
+    threads: dict,
+    target_line: int | None = None,
+    context: int = 2,
+) -> str:
+    """Render full review context without truncating suggestions or comments.
+
+    Without ``target_line``, every tracked-change line is shown, together with
+    comment threads anchored on those lines. With a target, both tracked
+    changes and comments are filtered to that exact source line. This keeps the
+    default useful on heavily annotated manuscripts instead of dumping every
+    historical comment in the project.
+    """
+    if target_line is not None and target_line < 1:
+        raise ValueError("target_line must be at least 1")
+    if context < 0:
+        raise ValueError("context must be non-negative")
+
+    text = document["text"]
+    ranges = document.get("ranges") or {}
+    changes = [
+        {**change, "line": _line_number(text, change["op"]["p"])}
+        for change in ranges.get("changes", [])
+    ]
+    comments = [
+        {**comment, "line": _line_number(text, comment["op"]["p"])}
+        for comment in ranges.get("comments", [])
+    ]
+
+    if target_line is not None:
+        changes = [change for change in changes if change["line"] == target_line]
+        comments = [comment for comment in comments if comment["line"] == target_line]
+        review_lines = {target_line}
+    else:
+        review_lines = {change["line"] for change in changes}
+        comments = [comment for comment in comments if comment["line"] in review_lines]
+
+    authors = _author_names(threads)
+    source_lines = text.splitlines()
+    out = [
+        f"review {path} (v{document['version']}): "
+        f"{len(changes)} tracked change(s), {len(comments)} comment thread(s)"
+    ]
+
+    if not review_lines:
+        out.append("no tracked changes to review")
+        return "\n".join(out) + "\n"
+
+    for line in sorted(review_lines):
+        out.append("")
+        out.append(f"=== line {line} ===")
+        start = max(1, line - context)
+        end = min(len(source_lines), line + context)
+        out.append(f"SOURCE (lines {start}-{end})")
+        for number in range(start, end + 1):
+            marker = ">" if number == line else " "
+            out.append(f"{marker} {number:>5} | {source_lines[number - 1]}")
+
+        line_changes = [change for change in changes if change["line"] == line]
+        for change in line_changes:
+            op = change["op"]
+            kind = "INSERT" if "i" in op else "DELETE"
+            body = op.get("i") if "i" in op else op.get("d", "")
+            user_id = (change.get("metadata") or {}).get("user_id", "")
+            author = authors.get(user_id, user_id[:8] or "unknown")
+            out.append(f"{kind} by {author} (change {change.get('id', 'unknown')})")
+            out.extend(_indent_block(body))
+
+        line_comments = [comment for comment in comments if comment["line"] == line]
+        for comment in line_comments:
+            thread_id = comment["op"].get("t") or comment.get("id")
+            anchor = comment["op"].get("c", "")
+            thread = threads.get(thread_id, {})
+            state = "resolved" if thread.get("resolved") else "open"
+            out.append(f"COMMENT THREAD {thread_id} ({state})")
+            out.append("  anchor:")
+            out.extend(_indent_block(anchor))
+            messages = thread.get("messages", [])
+            if not messages:
+                out.append("  (no messages returned)")
+            for message in messages:
+                user = message.get("user") or {}
+                user_id = message.get("user_id") or user.get("id", "")
+                author = authors.get(user_id, user_id[:8] or "unknown")
+                out.append(f"  {author}:")
+                out.extend(_indent_block(message.get("content", "")))
+
+    return "\n".join(out) + "\n"
+
+
 # --------------------------------------------------------------------------
 # export
 # --------------------------------------------------------------------------
@@ -527,6 +666,15 @@ def main() -> None:
     p_read = sub.add_parser("read"); p_read.add_argument("path"); p_read.add_argument("-o")
     p_ver = sub.add_parser("verify"); p_ver.add_argument("path"); p_ver.add_argument("local")
     p_chg = sub.add_parser("changes"); p_chg.add_argument("path")
+    p_rev = sub.add_parser(
+        "review",
+        help="show full tracked changes, source context, and attached comments",
+    )
+    p_rev.add_argument("path")
+    p_rev.add_argument("--line", type=int,
+                       help="show only changes and comments on this source line")
+    p_rev.add_argument("--context", type=int, default=2,
+                       help="source lines before and after each result (default: 2)")
     p_ed = sub.add_parser("edit")
     p_ed.add_argument("path"); p_ed.add_argument("--edits", required=True)
     p_ed.add_argument("--apply", action="store_true",
@@ -610,6 +758,20 @@ def main() -> None:
                 line = d["text"][:op["p"]].count("\n") + 1
                 print(f"  line {line:>4} {kind:6} {json.dumps(body)[:60]} "
                       f"user={c['metadata']['user_id'][:8]}")
+            return
+
+        if a.cmd == "review":
+            if a.line is not None and a.line < 1:
+                ap.error("review --line must be at least 1")
+            if a.context < 0:
+                ap.error("review --context must be non-negative")
+            sys.stdout.write(render_review(
+                a.path,
+                d,
+                proj.threads(),
+                target_line=a.line,
+                context=a.context,
+            ))
             return
 
         if a.cmd == "accept":

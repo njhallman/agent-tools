@@ -97,6 +97,31 @@ Reading index 3 as ranges makes every document look like it has no tracked
 changes, which reads as "tracked changes silently failed" when they actually
 worked.
 
+## Comment threads
+
+`joinDoc` returns comment *anchors* under `ranges["comments"]`, but not the
+discussion messages. Each anchor has an OT position, selected text, and thread
+id:
+
+```json
+{"op": {"p": 26540, "c": "selected text", "t": "<thread-id>"}}
+```
+
+The editor loads the corresponding messages separately:
+
+```
+GET /project/<pid>/threads
+```
+
+The response is an object keyed by thread id. Each value contains `messages`
+and, when applicable, resolution metadata. Use the same authenticated
+`requests.Session` as the realtime connection; this avoids another cookie setup
+and preserves the handshake's load-balancer affinity. A review of one source
+line can therefore join the document once, map both tracked changes and comment
+anchors to that line, and fetch all discussion text with one additional HTTP
+request. Do not print the email field returned inside each message's `user`
+object; display names are sufficient for manuscript review.
+
 ## Applying edits
 
 ```python
@@ -175,3 +200,4 @@ restore, so snapshot `/ranges` first if the before-state matters.
 | edit applies but no suggestion | `meta.tc` missing, or reading ack[3] as ranges |
 | edit vanishes entirely | emitted without an ack id |
 | text lands in the wrong place | offsets computed from stale or mangled text |
+| tracked edit is visible but its discussion is missing | `joinDoc` supplies only the anchor — fetch `/project/<pid>/threads` |

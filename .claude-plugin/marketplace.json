@@ -6,7 +6,7 @@
       "name": "overleaf-tracked-changes",
       "source": "./plugins/overleaf-tracked-changes",
       "description": "Read and edit Overleaf documents as real tracked changes from a terminal session, with no browser.",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

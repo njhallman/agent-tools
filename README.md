@@ -32,7 +32,9 @@ claude plugin install overleaf-tracked-changes@agent-tools
 ### overleaf-tracked-changes
 
 Reads and edits Overleaf documents as real accept/reject suggestions from a
-terminal session, with no browser. Overleaf's track-changes state exists only
+terminal session, with no browser. Its one-shot review command returns a full
+tracked replacement, surrounding source, and the attached collaborator
+discussion over one connection. Overleaf's track-changes state exists only
 inside Overleaf, so LaTeX pushed through its git sync always arrives as a plain
 update; this drives the realtime protocol directly instead.
 
