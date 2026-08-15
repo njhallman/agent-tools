@@ -31,14 +31,14 @@
       "tags": ["writing", "editing", "de-ai", "academic", "grants"]
     },
     {
-      "name": "paper-writing-skill",
-      "source": { "source": "github", "repo": "SNL-UCSB/paper-writing-skill" },
-      "description": "A five-stage pipeline for research papers — brainstorm, architect, draft, integrate, compress — with per-section rhetorical moves, a style audit on every edit, and an independent red-team pass. Calibrated for systems and ML venues.",
-      "author": { "name": "SNL-UCSB", "url": "https://github.com/SNL-UCSB" },
-      "homepage": "https://github.com/SNL-UCSB/paper-writing-skill",
+      "name": "academic-writing-agents",
+      "source": { "source": "github", "repo": "andrehuang/academic-writing-agents" },
+      "description": "Runs specialist reviewers in parallel over a draft — consistency, argument logic, technical accuracy, prose, LaTeX layout, bibliography — each in its own context. Reads the repository's own CLAUDE.md and .claude/agents for conventions rather than imposing a house style, which is what makes it field-agnostic.",
+      "author": { "name": "andrehuang", "url": "https://github.com/andrehuang" },
+      "homepage": "https://github.com/andrehuang/academic-writing-agents",
       "license": "MIT",
       "category": "writing",
-      "tags": ["writing", "academic", "papers", "latex"]
+      "tags": ["writing", "academic", "papers", "latex", "review"]
     },
     {
       "name": "academic-writing-skills",

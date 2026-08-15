@@ -51,16 +51,21 @@ errors, and are written down so they don't have to be rediscovered.
 ### Writing
 
 Four entries, each doing a job none of the others does: de-AI a general document,
-de-AI a manuscript, draft a paper, prepare a submission. That non-overlap is
+de-AI a manuscript, review a draft, prepare a submission. That division is
 maintained by hand — see [Pruning](#pruning) for what was cut and why. Star counts
 are from August 2026 and are only a rough proxy for how well-exercised each one
 is.
+
+The set is curated for **empirical archival accounting** — journal submissions
+with hypothesis development, regression tables, and multi-round revisions. That
+choice is why the field-neutral reviewer won over the better-known drafting
+pipeline; see [Pruning](#pruning).
 
 | Plugin | Invoke as | Job | Upstream | Stars | Always-on |
 | :-- | :-- | :-- | :-- | --: | --: |
 | `humanizer` | `humanizer` | General de-AI | [blader/humanizer](https://github.com/blader/humanizer) | ~35.8k | ~170 tok |
 | `academic-humanizer` | `academic-humanizer` | Manuscript de-AI | [AIScientists-Dev/academic-humanizer](https://github.com/AIScientists-Dev/academic-humanizer) | ~958 | ~182 tok |
-| `paper-writing-skill` | `paper-writing` | Drafting and audit | [SNL-UCSB/paper-writing-skill](https://github.com/SNL-UCSB/paper-writing-skill) | ~163 | ~275 tok |
+| `academic-writing-agents` | `academic` | Draft review | [andrehuang/academic-writing-agents](https://github.com/andrehuang/academic-writing-agents) | ~161 | ~702 tok |
 | `academic-writing-skills` | `cover-letter`, `bib-search-citation` | Submission | [bahayonghang/academic-writing-skills](https://github.com/bahayonghang/academic-writing-skills) | ~416 | ~598 tok |
 
 All are MIT licensed except `academic-writing-skills` — see
@@ -76,9 +81,13 @@ hence the second column.
   intact: citations, data, and numbers are left alone, and claims are pinned to
   the strength the evidence supports (`prove` becomes `show empirically`). Has an
   NSF/NIH proposal mode.
-- **paper-writing-skill** — a five-stage pipeline (brainstorm, architect, draft,
-  integrate, compress) with per-section rhetorical moves, a style audit on every
-  edit, and an independent red-team pass. Calibrated for systems and ML venues.
+- **academic-writing-agents** — an orchestrator that fans out to specialist
+  reviewers, each in its own context: consistency and cross-references, argument
+  logic, technical accuracy, prose, LaTeX float placement, and bibliography
+  auditing. Math notation, layout, and bibliography are covered by nothing else
+  here. It reads the repository's `CLAUDE.md` and any `.claude/agents/*.md` for
+  local conventions, so field-specific norms are configured per paper rather than
+  baked in.
 - **academic-writing-skills** — submission-time work: `cover-letter` drafts the
   submission letter, `bib-search-citation` searches for and formats citations.
   Upstream ships four more skills — a prose polisher, a submission audit, a
@@ -103,15 +112,17 @@ whole entries, and individual skills within an entry via its `skills` array.
 | Cut | Cost | Because |
 | :-- | --: | :-- |
 | `stop-slop` | ~60 tok | Its trigger — "drafting, editing, or reviewing text" — is most editing requests in any repository, and it is the most damaging thing here to fire on a manuscript. `humanizer` does the same job more carefully. |
-| `academic-writing-agents` | ~702 tok | A 12-agent bundle duplicating prose, review, bibliography, and drafting, each already covered by a cheaper specialist. It also auto-activates on `.tex`, which is the uncontrolled-firing problem in its purest form. |
+| `paper-writing-skill` | ~275 tok | Encodes one systems-and-networking lab's method, defaulting to "a systems/ML paper that designs something and measures it." Its brainstorming asks for a key abstraction name and a headline number, and its figure templates are architecture diagrams — none of which describes an archival accounting paper built on hypothesis development and regression tables. It also expects artifacts from two sibling skills that are not installed, and claims cover letters and reviewer responses in its trigger, colliding with `cover-letter`. |
 | `latex-paper-en` | — | Prose polishing, which is `academic-humanizer`'s job. |
-| `paper-audit` | — | Reviewer-style critique, which is `paper-writing-skill`'s red-team pass. |
+| `paper-audit` | — | Reviewer-style critique, which `academic-writing-agents` covers with a reviewer per axis. |
 
-What is left costs roughly 1.2k tokens with everything enabled, down from 2.4k,
-and no two entries claim the same work.
+What is left costs roughly 1.7k tokens with everything enabled, down from 2.4k.
 
 Nothing is lost permanently — restoring any of these is re-adding its entry, or
-its path to a `skills` array. Worth knowing what the cuts were about, though:
+its path to a `skills` array. `paper-writing-skill` in particular is well built
+and worth revisiting for anyone writing systems or ML papers; it is a field
+mismatch here, not a quality judgement. Worth knowing what the cuts were about,
+though:
 
 **The general and academic passes genuinely contradict each other.** `stop-slop`
 required that "every sentence needs a human subject doing something, no passive
@@ -129,17 +140,23 @@ scholarly constructs."
 second edits the first's output. Each removes what it was built to remove, and
 nothing puts the variation back.
 
-`humanizer` and `academic-humanizer` still overlap by design, since they are the
-same job for different registers. Hence the one rule that survives pruning:
-**one de-AI pass per repository, chosen deliberately.** The drafting and
-submission tools compose fine alongside it.
+Two overlaps survive pruning and cannot be curated away. `humanizer` and
+`academic-humanizer` are the same job for different registers, so they can only be
+chosen between. And `academic-writing-agents` carries a `prose-polisher` among its
+reviewers, which is a third thing willing to rewrite sentences.
+
+Hence the one rule that survives: **one prose pass per repository, chosen
+deliberately.** In a paper repository that means `academic-humanizer`, and letting
+the agents report rather than rewrite — ask for a review, not a polish. The
+submission tools compose fine alongside either.
 
 ### Per project
 
 | Repository | Enable |
 | :-- | :-- |
-| Paper or thesis (LaTeX) | `academic-humanizer` + `paper-writing-skill` |
-| Paper nearing submission | add `academic-writing-skills`, then disable it again |
+| Paper, drafting and revising | `academic-humanizer` |
+| Paper, full review round | add `academic-writing-agents` |
+| Paper nearing submission or in revision | add `academic-writing-skills`, then disable it again |
 | Grant or proposal | `academic-humanizer` |
 | README, docs, blog, email | `humanizer` |
 | Code repository | none |
@@ -150,10 +167,25 @@ Concretely, in a paper repository's `.claude/settings.json`:
 {
   "enabledPlugins": {
     "academic-humanizer@agent-tools": true,
-    "paper-writing-skill@agent-tools": true
+    "academic-writing-agents@agent-tools": true
   }
 }
 ```
+
+`academic-writing-agents` is the expensive one — ~702 tokens standing, plus a
+reviewer per axis when it fans out. It earns that during a review round and not
+much else, so it is the entry most worth toggling off between passes.
+
+### Teaching it the field
+
+`academic-writing-agents` reads the working repository's `CLAUDE.md` and any
+`.claude/agents/*.md` before deploying reviewers. That, rather than anything in
+this marketplace, is where discipline-specific conventions belong: which journal's
+style governs, that association language stays associational unless identification
+supports otherwise, table and variable-definition conventions, how the hypothesis
+development section is expected to run. A paper repository with a few paragraphs
+of that in its `CLAUDE.md` gets noticeably better reviews than one without, and
+none of it has to be baked into a plugin.
 
 Two habits worth having. Enabling a skill only makes it *available* — you can
 still name it directly ("use academic-humanizer on this section") to force the
