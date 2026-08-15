@@ -1,12 +1,58 @@
 {
   "name": "agent-tools",
   "owner": { "name": "njhallman" },
+  "description": "Cross-project tooling: plugins maintained here, plus vetted third-party writing skills referenced from their upstream repositories.",
   "plugins": [
     {
       "name": "overleaf-tracked-changes",
       "source": "./plugins/overleaf-tracked-changes",
       "description": "Read and edit Overleaf documents as real tracked changes from a terminal session, with no browser.",
-      "version": "1.1.0"
+      "version": "1.1.0",
+      "category": "writing"
+    },
+    {
+      "name": "humanizer",
+      "source": { "source": "github", "repo": "blader/humanizer" },
+      "description": "Rewrites text to strip the patterns that mark it as machine-written, working from Wikipedia's \"Signs of AI writing\". Two passes, plus an optional voice profile calibrated against your own earlier writing.",
+      "author": { "name": "blader", "url": "https://github.com/blader" },
+      "homepage": "https://github.com/blader/humanizer",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "editing", "de-ai", "general"]
+    },
+    {
+      "name": "academic-humanizer",
+      "source": { "source": "github", "repo": "AIScientists-Dev/academic-humanizer" },
+      "description": "The same de-AI pass, but constrained so scholarly convention survives it: citations, data, and numbers are left untouched, and claims are held to the strength the evidence actually supports. Has an NSF/NIH proposal mode.",
+      "author": { "name": "AIScientists-Dev", "url": "https://github.com/AIScientists-Dev" },
+      "homepage": "https://github.com/AIScientists-Dev/academic-humanizer",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "editing", "de-ai", "academic", "grants"]
+    },
+    {
+      "name": "academic-writing-agents",
+      "source": { "source": "github", "repo": "andrehuang/academic-writing-agents" },
+      "description": "Runs specialist reviewers in parallel over a draft — consistency, argument logic, technical accuracy, prose, LaTeX layout, bibliography — each in its own context. Reads the repository's own CLAUDE.md and .claude/agents for conventions rather than imposing a house style, which is what makes it field-agnostic.",
+      "author": { "name": "andrehuang", "url": "https://github.com/andrehuang" },
+      "homepage": "https://github.com/andrehuang/academic-writing-agents",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "academic", "papers", "latex", "review"]
+    },
+    {
+      "name": "academic-writing-skills",
+      "source": { "source": "github", "repo": "bahayonghang/academic-writing-skills" },
+      "description": "Submission-time tooling for LaTeX manuscripts: drafting the cover letter and searching for citations. Pruned to the two skills nothing else here covers — upstream's prose polisher, submission audit, Chinese-thesis, and Typst skills are not loaded.",
+      "skills": [
+        "./academic-writing-skills/cover-letter",
+        "./academic-writing-skills/bib-search-citation"
+      ],
+      "author": { "name": "bahayonghang", "url": "https://github.com/bahayonghang" },
+      "homepage": "https://github.com/bahayonghang/academic-writing-skills",
+      "license": "LicenseRef-AcademicUseOnly",
+      "category": "writing",
+      "tags": ["writing", "academic", "papers", "latex", "non-commercial"]
     }
   ]
 }
