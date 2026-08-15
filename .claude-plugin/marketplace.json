@@ -1,12 +1,64 @@
 {
   "name": "agent-tools",
   "owner": { "name": "njhallman" },
+  "description": "Cross-project tooling: plugins maintained here, plus vetted third-party writing skills referenced from their upstream repositories.",
   "plugins": [
     {
       "name": "overleaf-tracked-changes",
       "source": "./plugins/overleaf-tracked-changes",
       "description": "Read and edit Overleaf documents as real tracked changes from a terminal session, with no browser.",
-      "version": "1.1.0"
+      "version": "1.1.0",
+      "category": "writing"
+    },
+    {
+      "name": "humanizer",
+      "source": { "source": "github", "repo": "blader/humanizer" },
+      "description": "Rewrites text to strip the patterns that mark it as machine-written, working from Wikipedia's \"Signs of AI writing\". Two passes, plus an optional voice profile calibrated against your own earlier writing.",
+      "author": { "name": "blader", "url": "https://github.com/blader" },
+      "homepage": "https://github.com/blader/humanizer",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "editing", "de-ai", "general"]
+    },
+    {
+      "name": "stop-slop",
+      "source": { "source": "github", "repo": "hardikpandya/stop-slop" },
+      "description": "Bans throat-clearing openers, business jargon, and the binary-contrast sentence shapes that read as filler, then scores the result on directness, rhythm, trust, authenticity, and density.",
+      "author": { "name": "Hardik Pandya", "url": "https://github.com/hardikpandya" },
+      "homepage": "https://github.com/hardikpandya/stop-slop",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "editing", "de-ai", "general"]
+    },
+    {
+      "name": "academic-humanizer",
+      "source": { "source": "github", "repo": "AIScientists-Dev/academic-humanizer" },
+      "description": "The same de-AI pass, but constrained so scholarly convention survives it: citations, data, and numbers are left untouched, and claims are held to the strength the evidence actually supports. Has an NSF/NIH proposal mode.",
+      "author": { "name": "AIScientists-Dev", "url": "https://github.com/AIScientists-Dev" },
+      "homepage": "https://github.com/AIScientists-Dev/academic-humanizer",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "editing", "de-ai", "academic", "grants"]
+    },
+    {
+      "name": "paper-writing-skill",
+      "source": { "source": "github", "repo": "SNL-UCSB/paper-writing-skill" },
+      "description": "A five-stage pipeline for research papers — brainstorm, architect, draft, integrate, compress — with per-section rhetorical moves, a style audit on every edit, and an independent red-team pass. Calibrated for systems and ML venues.",
+      "author": { "name": "SNL-UCSB", "url": "https://github.com/SNL-UCSB" },
+      "homepage": "https://github.com/SNL-UCSB/paper-writing-skill",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "academic", "papers", "latex"]
+    },
+    {
+      "name": "academic-writing-agents",
+      "source": { "source": "github", "repo": "andrehuang/academic-writing-agents" },
+      "description": "Runs specialist reviewers in parallel over a draft — prose, structure, math notation, figures, bibliography — on the theory that each catches what the others miss. Activates on .tex files and can rewrite prose or draft sections, not just report.",
+      "author": { "name": "andrehuang", "url": "https://github.com/andrehuang" },
+      "homepage": "https://github.com/andrehuang/academic-writing-agents",
+      "license": "MIT",
+      "category": "writing",
+      "tags": ["writing", "academic", "papers", "latex", "review"]
     }
   ]
 }
