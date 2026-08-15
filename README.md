@@ -52,7 +52,7 @@ errors, and are written down so they don't have to be rediscovered.
 
 Two jobs that are easy to conflate: making prose stop sounding machine-generated,
 and making it read like a paper. The first two below do the former on any text;
-the last three know what a manuscript is. Star counts are from August 2026 and
+the last four know what a manuscript is. Star counts are from August 2026 and
 are only a rough proxy for how well-exercised each one is.
 
 | Plugin | Invoke as | Upstream | Stars | Always-on |
@@ -62,8 +62,10 @@ are only a rough proxy for how well-exercised each one is.
 | `academic-humanizer` | `academic-humanizer` | [AIScientists-Dev/academic-humanizer](https://github.com/AIScientists-Dev/academic-humanizer) | ~958 | ~182 tok |
 | `paper-writing-skill` | `paper-writing` | [SNL-UCSB/paper-writing-skill](https://github.com/SNL-UCSB/paper-writing-skill) | ~163 | ~275 tok |
 | `academic-writing-agents` | `academic` | [andrehuang/academic-writing-agents](https://github.com/andrehuang/academic-writing-agents) | ~161 | ~702 tok |
+| `academic-writing-skills` | 4 skills, named below | [bahayonghang/academic-writing-skills](https://github.com/bahayonghang/academic-writing-skills) | ~416 | ~1,059 tok |
 
-All five are MIT licensed. Two answer to a name that differs from the plugin's,
+All are MIT licensed except `academic-writing-skills` — see
+[Licensing](#licensing). Two answer to a name that differs from the plugin's,
 hence the second column.
 
 - **humanizer** — rewrites against the 33 patterns in Wikipedia's "Signs of AI
@@ -81,24 +83,87 @@ hence the second column.
   edit, and an independent red-team pass. Calibrated for systems and ML venues.
 - **academic-writing-agents** — 12 specialist reviewers run in parallel over a
   draft covering prose, structure, math notation, figures, and bibliography. It
-  activates on `.tex` files and will rewrite, not just report. By far the most
-  expensive of the set; enable it for manuscript work rather than by default.
+  activates on `.tex` files and will rewrite, not just report.
+- **academic-writing-skills** — the submission end rather than the drafting end.
+  Four separate skills: `latex-paper-en` polishes an English LaTeX paper,
+  `paper-audit` runs a reviewer-style critique before you submit, `cover-letter`
+  drafts the submission letter, and `bib-search-citation` handles bibliography
+  search. Upstream also ships a Chinese-thesis skill (GB/T 7714) and a Typst
+  skill, which this entry does not load; to pick them up, add their paths to the
+  entry's `skills` array.
 
-Enabling all five costs roughly 1.4k tokens of always-on context per session, so
-it is worth turning on only the ones a given repository actually needs:
+## Choosing one
+
+Enabling everything at once is the one configuration that reliably makes writing
+worse. Two reasons, and they are separate problems.
+
+### They contradict each other on academic prose
+
+General de-AI tools and academic convention disagree about the same constructs,
+not by accident but by design. `stop-slop` requires that "every sentence needs a
+human subject doing something, no passive constructions" and says to "skip
+softening." `academic-humanizer` states the opposite for manuscripts:
+evidence-tied hedging is "correct and required" — keep `suggests`, keep `is
+consistent with` — passive is "fine when the actor is irrelevant," and `we` is
+standard.
+
+Both are right for their own domain. Applied to a paper, though, the general rule
+does real damage: stripping the hedge from *these results suggest X* leaves *X*,
+which is not a tightened sentence but a stronger claim than the data supports.
+That is a reviewer problem, not a style problem. `academic-humanizer`'s own
+documentation is blunt about it — "a general humanizer flattens legitimate
+scholarly constructs."
+
+`humanizer` is the safer of the two general tools on technical text: it fires
+only on clusters of tells, treats neutral register as correct rather than
+suspect, and does not flag citations. `stop-slop` is the one to keep away from a
+manuscript.
+
+### Their triggers overlap
+
+Several of these describe themselves in nearly the same terms — `stop-slop`
+answers to "drafting, editing, or reviewing text," which is most editing requests
+in any repository. With four or five enabled, which one fires is not something
+you control, and two firing in sequence means the second edits the first's
+output. Compounding passes flatten voice: each removes what it was built to
+remove, and nothing puts back the variation.
+
+So: **one de-AI pass per repository, chosen deliberately.** The drafting and
+audit tools compose fine alongside it, since they do a different job.
+
+### Per project
+
+| Repository | Enable | Why |
+| :-- | :-- | :-- |
+| Paper or thesis (LaTeX) | `academic-humanizer` + `paper-writing-skill` | Hedging and passive survive; the pipeline handles structure |
+| Paper nearing submission | add `academic-writing-skills` | Reviewer-style audit and cover letter, then disable it again |
+| Heavy `.tex` review round | `academic-writing-agents` alone | 12 agents already cover prose, math, figures, and bibliography |
+| Grant or proposal | `academic-humanizer` | Has an explicit NSF/NIH mode |
+| README, docs, blog, email | `humanizer` **or** `stop-slop` | Pick one — `stop-slop` if you want it cheap and blunt |
+| Code repository | none | Nothing here helps with code |
+
+Concretely, in a paper repository's `.claude/settings.json`:
 
 ```json
 {
   "enabledPlugins": {
-    "humanizer@agent-tools": true,
-    "academic-humanizer@agent-tools": true
+    "academic-humanizer@agent-tools": true,
+    "paper-writing-skill@agent-tools": true
   }
 }
 ```
 
-The general and academic de-AI passes overlap, and running both over one draft
-tends to flatten it. Prefer `academic-humanizer` on manuscripts and `humanizer`
-elsewhere.
+Two further habits worth having. Enabling a skill only makes it *available* — you
+can still name it directly ("use academic-humanizer on this section") to force a
+specific one when several could plausibly fire. And run these on a branch or with
+the draft committed first: they rewrite prose in place, and the diff is the only
+practical way to see what a pass actually changed.
+
+Cost is the other reason to be selective. Enabling every writing entry costs
+roughly 2.4k tokens of always-on context in every session, before you have asked
+for anything; `academic-writing-skills` and `academic-writing-agents` are three
+quarters of that. Check what a given repository is actually carrying with
+`claude plugin list` or `/plugin`.
 
 ## Conventions
 
@@ -140,3 +205,26 @@ layout has drifted:
 ```bash
 claude plugin validate . --strict
 ```
+
+### Licensing
+
+Referencing rather than vendoring keeps this simple: nothing here is a copy of
+anyone else's work, so this repository does not redistribute it and cannot
+relicense it. Copyright stays with each upstream author, their terms reach the
+person installing the plugin directly, and a licence chosen for this repository
+would cover only what is actually in it — the manifest, the README, and
+`plugins/`.
+
+Five of the six writing entries are MIT. `academic-writing-skills` is not, and is
+worth knowing about:
+
+- It has no `LICENSE` file. The only stated terms are a line in its README —
+  "Academic Use Only — Not for commercial use."
+- Absent a licence file, the default is ordinary copyright, and that README line
+  is a narrow grant rather than a redistribution licence.
+
+Referencing it is unaffected, since Claude Code clones it from its own repository
+at install time. Academic use is squarely within what the author permits.
+Vendoring a copy into `plugins/` is the thing to avoid: that would be
+redistribution, which nothing upstream clearly grants. The `license` field on
+that entry records the restriction so it is visible before installing.
