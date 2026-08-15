@@ -21,16 +21,6 @@
       "tags": ["writing", "editing", "de-ai", "general"]
     },
     {
-      "name": "stop-slop",
-      "source": { "source": "github", "repo": "hardikpandya/stop-slop" },
-      "description": "Bans throat-clearing openers, business jargon, and the binary-contrast sentence shapes that read as filler, then scores the result on directness, rhythm, trust, authenticity, and density.",
-      "author": { "name": "Hardik Pandya", "url": "https://github.com/hardikpandya" },
-      "homepage": "https://github.com/hardikpandya/stop-slop",
-      "license": "MIT",
-      "category": "writing",
-      "tags": ["writing", "editing", "de-ai", "general"]
-    },
-    {
       "name": "academic-humanizer",
       "source": { "source": "github", "repo": "AIScientists-Dev/academic-humanizer" },
       "description": "The same de-AI pass, but constrained so scholarly convention survives it: citations, data, and numbers are left untouched, and claims are held to the strength the evidence actually supports. Has an NSF/NIH proposal mode.",
@@ -51,22 +41,10 @@
       "tags": ["writing", "academic", "papers", "latex"]
     },
     {
-      "name": "academic-writing-agents",
-      "source": { "source": "github", "repo": "andrehuang/academic-writing-agents" },
-      "description": "Runs specialist reviewers in parallel over a draft — prose, structure, math notation, figures, bibliography — on the theory that each catches what the others miss. Activates on .tex files and can rewrite prose or draft sections, not just report.",
-      "author": { "name": "andrehuang", "url": "https://github.com/andrehuang" },
-      "homepage": "https://github.com/andrehuang/academic-writing-agents",
-      "license": "MIT",
-      "category": "writing",
-      "tags": ["writing", "academic", "papers", "latex", "review"]
-    },
-    {
       "name": "academic-writing-skills",
       "source": { "source": "github", "repo": "bahayonghang/academic-writing-skills" },
-      "description": "Post-writing toolkit for LaTeX manuscripts: English polishing, a reviewer-style submission audit, cover letters, and bibliography search. Curated to the four English-language skills — the Chinese-thesis and Typst skills upstream are not loaded.",
+      "description": "Submission-time tooling for LaTeX manuscripts: drafting the cover letter and searching for citations. Pruned to the two skills nothing else here covers — upstream's prose polisher, submission audit, Chinese-thesis, and Typst skills are not loaded.",
       "skills": [
-        "./academic-writing-skills/latex-paper-en",
-        "./academic-writing-skills/paper-audit",
         "./academic-writing-skills/cover-letter",
         "./academic-writing-skills/bib-search-citation"
       ],

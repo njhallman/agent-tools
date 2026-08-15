@@ -50,30 +50,28 @@ errors, and are written down so they don't have to be rediscovered.
 
 ### Writing
 
-Two jobs that are easy to conflate: making prose stop sounding machine-generated,
-and making it read like a paper. The first two below do the former on any text;
-the last four know what a manuscript is. Star counts are from August 2026 and
-are only a rough proxy for how well-exercised each one is.
+Four entries, each doing a job none of the others does: de-AI a general document,
+de-AI a manuscript, draft a paper, prepare a submission. That non-overlap is
+maintained by hand — see [Pruning](#pruning) for what was cut and why. Star counts
+are from August 2026 and are only a rough proxy for how well-exercised each one
+is.
 
-| Plugin | Invoke as | Upstream | Stars | Always-on |
-| :-- | :-- | :-- | --: | --: |
-| `humanizer` | `humanizer` | [blader/humanizer](https://github.com/blader/humanizer) | ~35.8k | ~170 tok |
-| `stop-slop` | `stop-slop` | [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop) | ~15.7k | ~60 tok |
-| `academic-humanizer` | `academic-humanizer` | [AIScientists-Dev/academic-humanizer](https://github.com/AIScientists-Dev/academic-humanizer) | ~958 | ~182 tok |
-| `paper-writing-skill` | `paper-writing` | [SNL-UCSB/paper-writing-skill](https://github.com/SNL-UCSB/paper-writing-skill) | ~163 | ~275 tok |
-| `academic-writing-agents` | `academic` | [andrehuang/academic-writing-agents](https://github.com/andrehuang/academic-writing-agents) | ~161 | ~702 tok |
-| `academic-writing-skills` | 4 skills, named below | [bahayonghang/academic-writing-skills](https://github.com/bahayonghang/academic-writing-skills) | ~416 | ~1,059 tok |
+| Plugin | Invoke as | Job | Upstream | Stars | Always-on |
+| :-- | :-- | :-- | :-- | --: | --: |
+| `humanizer` | `humanizer` | General de-AI | [blader/humanizer](https://github.com/blader/humanizer) | ~35.8k | ~170 tok |
+| `academic-humanizer` | `academic-humanizer` | Manuscript de-AI | [AIScientists-Dev/academic-humanizer](https://github.com/AIScientists-Dev/academic-humanizer) | ~958 | ~182 tok |
+| `paper-writing-skill` | `paper-writing` | Drafting and audit | [SNL-UCSB/paper-writing-skill](https://github.com/SNL-UCSB/paper-writing-skill) | ~163 | ~275 tok |
+| `academic-writing-skills` | `cover-letter`, `bib-search-citation` | Submission | [bahayonghang/academic-writing-skills](https://github.com/bahayonghang/academic-writing-skills) | ~416 | ~598 tok |
 
 All are MIT licensed except `academic-writing-skills` — see
-[Licensing](#licensing). Two answer to a name that differs from the plugin's,
+[Licensing](#licensing). Several answer to a name that differs from the plugin's,
 hence the second column.
 
 - **humanizer** — rewrites against the 33 patterns in Wikipedia's "Signs of AI
   writing", in two passes, and can calibrate to a voice profile built from your
-  own earlier writing.
-- **stop-slop** — narrower and much cheaper. Bans throat-clearing openers,
-  business jargon, and binary-contrast sentence shapes, then scores the result on
-  directness, rhythm, trust, authenticity, and density.
+  own earlier writing. Fires only on clusters of tells, treats neutral register as
+  correct rather than suspect, and leaves citations alone, which is what makes it
+  the safer general tool to have installed near technical text.
 - **academic-humanizer** — the same de-AI pass with scholarly convention held
   intact: citations, data, and numbers are left alone, and claims are pinned to
   the strength the evidence supports (`prove` becomes `show empirically`). Has an
@@ -81,66 +79,70 @@ hence the second column.
 - **paper-writing-skill** — a five-stage pipeline (brainstorm, architect, draft,
   integrate, compress) with per-section rhetorical moves, a style audit on every
   edit, and an independent red-team pass. Calibrated for systems and ML venues.
-- **academic-writing-agents** — 12 specialist reviewers run in parallel over a
-  draft covering prose, structure, math notation, figures, and bibliography. It
-  activates on `.tex` files and will rewrite, not just report.
-- **academic-writing-skills** — the submission end rather than the drafting end.
-  Four separate skills: `latex-paper-en` polishes an English LaTeX paper,
-  `paper-audit` runs a reviewer-style critique before you submit, `cover-letter`
-  drafts the submission letter, and `bib-search-citation` handles bibliography
-  search. Upstream also ships a Chinese-thesis skill (GB/T 7714) and a Typst
-  skill, which this entry does not load; to pick them up, add their paths to the
-  entry's `skills` array.
+- **academic-writing-skills** — submission-time work: `cover-letter` drafts the
+  submission letter, `bib-search-citation` searches for and formats citations.
+  Upstream ships four more skills — a prose polisher, a submission audit, a
+  Chinese thesis skill, and a Typst one — which this entry deliberately does not
+  load.
 
-## Choosing one
+## Pruning
 
-Enabling everything at once is the one configuration that reliably makes writing
-worse. Two reasons, and they are separate problems.
+A skill fires on the `description` in its own `SKILL.md` frontmatter. That text
+belongs to the upstream author, and nothing in a marketplace entry overrides it:
+the entry's `description` is plugin-level metadata, and neither it nor
+`plugin.json` can rewrite a skill's trigger. Narrowing a trigger means forking the
+`SKILL.md`, which means vendoring, which costs the things
+[referencing](#referenced-plugins) buys — and for `academic-writing-skills` would
+mean redistributing work whose author never granted redistribution.
 
-### They contradict each other on academic prose
+So overlap is removed by dropping things instead. Two levers, both used here:
+whole entries, and individual skills within an entry via its `skills` array.
 
-General de-AI tools and academic convention disagree about the same constructs,
-not by accident but by design. `stop-slop` requires that "every sentence needs a
-human subject doing something, no passive constructions" and says to "skip
-softening." `academic-humanizer` states the opposite for manuscripts:
-evidence-tied hedging is "correct and required" — keep `suggests`, keep `is
-consistent with` — passive is "fine when the actor is irrelevant," and `we` is
-standard.
+### What was cut
 
-Both are right for their own domain. Applied to a paper, though, the general rule
-does real damage: stripping the hedge from *these results suggest X* leaves *X*,
-which is not a tightened sentence but a stronger claim than the data supports.
-That is a reviewer problem, not a style problem. `academic-humanizer`'s own
-documentation is blunt about it — "a general humanizer flattens legitimate
+| Cut | Cost | Because |
+| :-- | --: | :-- |
+| `stop-slop` | ~60 tok | Its trigger — "drafting, editing, or reviewing text" — is most editing requests in any repository, and it is the most damaging thing here to fire on a manuscript. `humanizer` does the same job more carefully. |
+| `academic-writing-agents` | ~702 tok | A 12-agent bundle duplicating prose, review, bibliography, and drafting, each already covered by a cheaper specialist. It also auto-activates on `.tex`, which is the uncontrolled-firing problem in its purest form. |
+| `latex-paper-en` | — | Prose polishing, which is `academic-humanizer`'s job. |
+| `paper-audit` | — | Reviewer-style critique, which is `paper-writing-skill`'s red-team pass. |
+
+What is left costs roughly 1.2k tokens with everything enabled, down from 2.4k,
+and no two entries claim the same work.
+
+Nothing is lost permanently — restoring any of these is re-adding its entry, or
+its path to a `skills` array. Worth knowing what the cuts were about, though:
+
+**The general and academic passes genuinely contradict each other.** `stop-slop`
+required that "every sentence needs a human subject doing something, no passive
+constructions" and said to "skip softening." `academic-humanizer` holds the
+opposite for manuscripts: evidence-tied hedging is "correct and required" — keep
+`suggests`, keep `is consistent with` — passive is "fine when the actor is
+irrelevant," and `we` is standard. Both are right for their own domain, but
+applied to a paper the general rule does real damage: strip the hedge from *these
+results suggest X* and you are left with *X*, a stronger claim than the data
+supports. That is a reviewer problem, not a style problem. `academic-humanizer`'s
+own documentation puts it plainly — "a general humanizer flattens legitimate
 scholarly constructs."
 
-`humanizer` is the safer of the two general tools on technical text: it fires
-only on clusters of tells, treats neutral register as correct rather than
-suspect, and does not flag citations. `stop-slop` is the one to keep away from a
-manuscript.
+**Compounding passes flatten prose.** Two skills firing in sequence means the
+second edits the first's output. Each removes what it was built to remove, and
+nothing puts the variation back.
 
-### Their triggers overlap
-
-Several of these describe themselves in nearly the same terms — `stop-slop`
-answers to "drafting, editing, or reviewing text," which is most editing requests
-in any repository. With four or five enabled, which one fires is not something
-you control, and two firing in sequence means the second edits the first's
-output. Compounding passes flatten voice: each removes what it was built to
-remove, and nothing puts back the variation.
-
-So: **one de-AI pass per repository, chosen deliberately.** The drafting and
-audit tools compose fine alongside it, since they do a different job.
+`humanizer` and `academic-humanizer` still overlap by design, since they are the
+same job for different registers. Hence the one rule that survives pruning:
+**one de-AI pass per repository, chosen deliberately.** The drafting and
+submission tools compose fine alongside it.
 
 ### Per project
 
-| Repository | Enable | Why |
-| :-- | :-- | :-- |
-| Paper or thesis (LaTeX) | `academic-humanizer` + `paper-writing-skill` | Hedging and passive survive; the pipeline handles structure |
-| Paper nearing submission | add `academic-writing-skills` | Reviewer-style audit and cover letter, then disable it again |
-| Heavy `.tex` review round | `academic-writing-agents` alone | 12 agents already cover prose, math, figures, and bibliography |
-| Grant or proposal | `academic-humanizer` | Has an explicit NSF/NIH mode |
-| README, docs, blog, email | `humanizer` **or** `stop-slop` | Pick one — `stop-slop` if you want it cheap and blunt |
-| Code repository | none | Nothing here helps with code |
+| Repository | Enable |
+| :-- | :-- |
+| Paper or thesis (LaTeX) | `academic-humanizer` + `paper-writing-skill` |
+| Paper nearing submission | add `academic-writing-skills`, then disable it again |
+| Grant or proposal | `academic-humanizer` |
+| README, docs, blog, email | `humanizer` |
+| Code repository | none |
 
 Concretely, in a paper repository's `.claude/settings.json`:
 
@@ -153,17 +155,14 @@ Concretely, in a paper repository's `.claude/settings.json`:
 }
 ```
 
-Two further habits worth having. Enabling a skill only makes it *available* — you
-can still name it directly ("use academic-humanizer on this section") to force a
-specific one when several could plausibly fire. And run these on a branch or with
-the draft committed first: they rewrite prose in place, and the diff is the only
-practical way to see what a pass actually changed.
+Two habits worth having. Enabling a skill only makes it *available* — you can
+still name it directly ("use academic-humanizer on this section") to force the
+choice when more than one could plausibly fire. And run these with the draft
+committed first: they rewrite prose in place, and the diff is the only practical
+way to see what a pass actually changed.
 
-Cost is the other reason to be selective. Enabling every writing entry costs
-roughly 2.4k tokens of always-on context in every session, before you have asked
-for anything; `academic-writing-skills` and `academic-writing-agents` are three
-quarters of that. Check what a given repository is actually carrying with
-`claude plugin list` or `/plugin`.
+Check what a repository is actually carrying with `claude plugin list` or
+`/plugin`.
 
 ## Conventions
 
@@ -215,8 +214,8 @@ person installing the plugin directly, and a licence chosen for this repository
 would cover only what is actually in it — the manifest, the README, and
 `plugins/`.
 
-Five of the six writing entries are MIT. `academic-writing-skills` is not, and is
-worth knowing about:
+Three of the four writing entries are MIT. `academic-writing-skills` is not, and
+is worth knowing about:
 
 - It has no `LICENSE` file. The only stated terms are a line in its README —
   "Academic Use Only — Not for commercial use."
